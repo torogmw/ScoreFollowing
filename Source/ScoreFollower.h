@@ -11,7 +11,7 @@
 
 #include <iostream>
 #include "JuceHeader.h"
-#include <vector>
+#include "Follower.h"
 
 #endif /* defined(__ScoreFollowing__ScoreFollower__) */
 
@@ -26,7 +26,8 @@ public:
 							   int numSamples);
     void audioDeviceAboutToStart (AudioIODevice* device);
     void audioDeviceStopped();
-
+    
+    
 private:
     AudioDeviceManager deviceManager;
     
