@@ -7,3 +7,87 @@
 //
 
 #include "Follower.h"
+Follower::Follower(vector<int>& score_, vector<vector<float> >& probModel_):score(score_),probModel(probModel_)
+{
+    audioInput = new float[frameSize];
+    rainBuffer = new float[hopSize];
+    for (unsigned i = 0; i<frameSize; i++) audioInput[i] = 0; //init the audioBuffer to all 0
+    for (unsigned i = 0; i<hopSize; i++) rainBuffer[i] = 0; //init the audioBuffer to all 0
+    audioTest.open("/Users/Toro/Documents/Spring2014/7100/ScoreFollowing/test");
+}
+
+Follower::~Follower()
+{
+    delete[] audioInput;
+    delete[] rainBuffer;
+    audioTest.close();
+    cout<<"following finished! "<<endl;
+}
+
+void Follower::followingMain(const float *rawAudio)
+{
+    resample(rawAudio, 48000, sampleRate, hopSize*48000/sampleRate);
+    // observation
+    
+}
+
+
+void Follower::observation()
+{
+    
+}
+
+void Follower::alignment()
+{
+    
+}
+
+
+
+void Follower::resample(const float *rawInput, unsigned int in_rate, unsigned int out_rate, long in_length)
+{
+    double ratio         = in_rate / (double)out_rate;
+    unsigned out_length  = std::ceil(in_length / ratio);
+    const double support = 4.0;
+    
+    
+    for(unsigned i=0; i<out_length; ++i)
+    {
+        double center = i * ratio;
+        double min    = center-support;
+        double max    = center+support;
+        
+        unsigned min_in = std::max( 0,                 (int)(min + 0.5) );
+        unsigned max_in = std::min( (int)in_length-1,  (int)(max + 0.5) );
+        double sum    = 0.0;
+        double result = 0.0;
+        for(unsigned i=min_in; i<=max_in; ++i)
+        {
+            double factor = sinc(i-center);
+            result += rawInput[i] * factor;
+            sum    += factor;
+        }
+        if(sum != 0.0) result /= sum;
+        if(result <= -32768) rainBuffer[i] = -32768;
+        else if(result > 32767) rainBuffer[i] = 32767;
+        rainBuffer[i] = result + 0.5;
+        //audioTest<<rainBuffer[i]<<" ";
+    }
+    
+    
+    // move forward
+    for (unsigned i = 0; i<frameSize; i++){
+        if (i <frameSize - hopSize)
+            audioInput[i] = audioInput[i+hopSize];
+        else
+            audioInput[i] = rainBuffer[i+hopSize-frameSize];
+    }
+    
+}
+
+double Follower::sinc(double x)
+{
+    if(x == 0.0) return 1.0;
+    x *= PI;
+    return std::sin(x) / x;
+}
