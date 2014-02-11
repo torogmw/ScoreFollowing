@@ -37,6 +37,7 @@ public:
 private:
     AudioDeviceManager deviceManager;
     Follower* follower;
+    bool ready;
     //int bufferCount; //count every 1.5 times for parse
     AudioSampleBuffer copyBuffer = AudioSampleBuffer(1, RECORDBUFFER);
     AudioSampleBuffer tempBuffer = AudioSampleBuffer(1, RECORDSIZE); // due to the sample rate

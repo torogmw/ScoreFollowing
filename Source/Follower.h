@@ -17,10 +17,14 @@
 #include "rsrfft.h"
 using namespace std;
 
-#define ATTACK     1
-#define SUSTAIN    2
-#define REST       3
+#define ATTACK     0
+#define SUSTAIN    1
+#define REST       2
 
+#define SAMPLERATE 16000
+#define FRAMESIZE 1024
+#define HOPSIZE 256
+#define PI 3.1415926
 
 class Follower{
 public:
@@ -29,28 +33,31 @@ public:
     void observation();
     void alignment();
     void followingMain(const float* rawAudio);
-    void resample(const float* rawInput, unsigned in_rate, unsigned out_rate, long in_length);
+    void resample(const float* rawInput, int in_rate, int out_rate, long in_length);
     // feature extraction family
     void getFeatures();
     
-    // hmm model
+    // hmm model, transition matrix and veterbi algorith,
+    vector<vector <float> > transMatrix;
+
     // math function
     double sinc(double x);
-    
+    int findMin(float key, vector<float> oneDimension);
 private:
-    const int sampleRate = 16000;              // restrict the samplerate to 160000
-    const int frameSize = 1024;                // the frameSize is for downsampled signal
-    const int hopSize = 256;                   // hopSize is a quarter of the signal
-    const double PI = 3.1415926;
+    const int sampleRate;              // restrict the samplerate to 160000
+    const int frameSize;                // the frameSize is for downsampled signal
+    const int hopSize;                   // hopSize is a quarter of the signal
+    //const double PI = 3.1415926;
     vector<int> score;                         // repreent the score in a vector
     vector<vector<float> > probModel;          // probablistic stored in an 2d array
     vector<float> featList;
-    int currPos;
+    vector<float> dist;
+    int currState;
+    float* raw;
     float* audioInput;
     float* rainBuffer;
     SplitRadixFFT* fft;
     float* fftBuffer;
-    int overlapCount;
     ofstream audioTest;
 };
 

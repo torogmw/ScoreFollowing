@@ -10,7 +10,6 @@
 
 
 ScoreFollower::ScoreFollower(){
-;
     AudioDeviceManager::AudioDeviceSetup config;
     config.sampleRate = SAMPLERATE;
     config.bufferSize = RECORDBUFFER;
@@ -23,14 +22,14 @@ ScoreFollower::ScoreFollower(){
                              &config/* preferred setup options */);
 
     deviceManager.addAudioCallback(this);
+    ready = 0;
     parseScoreandModel();
 
-    
-    
     //Follower = new Follower(score, probModel);
 }
 
 ScoreFollower::~ScoreFollower(){
+    ready = false;
     delete follower;
 }
 
@@ -51,9 +50,8 @@ void ScoreFollower::audioDeviceIOCallback(const float** inputChannelData,
 //    copyBuffer.clear();
 //    tempBuffer.clear();
     // rain buffere hard code
-    
-
-    follower->followingMain(inputChannelData[0]);
+    if(ready)
+        follower->followingMain(inputChannelData[0]);
         
     
 }
@@ -88,14 +86,17 @@ void ScoreFollower::parseScoreandModel(){
     for (int i = 0; i<models.size(); i++)
     {
         StringArray temp;
-        temp.addTokens(models[i], ",");
+        temp.addTokens(models[i], ",", "");
+        
         vector<float> oneDimension;
         for(int j = 0; j<temp.size(); j++){
-            oneDimension.push_back(temp[i].getFloatValue());
+            oneDimension.push_back(temp[j].getFloatValue());
         }
         probModel.push_back(oneDimension);
     }
     
-    follower = new Follower(score,probModel);           // initialize the follower 
+    follower = new Follower(score,probModel);           // initialize the follower
+    ready = true;
+    
 }
 
