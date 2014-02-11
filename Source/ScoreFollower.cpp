@@ -70,6 +70,7 @@ void ScoreFollower::audioDeviceStopped(){
 void ScoreFollower::parseScoreandModel(){
     vector<int> score;
     vector<vector<float> >probModel;
+    File::getCurrentWorkingDirectory();
     File scoreFile("/Users/Toro/Documents/Spring2014/7100/ScoreFollowing/data/1_score.txt");
     StringArray scores;
     scoreFile.readLines(scores);
@@ -79,7 +80,6 @@ void ScoreFollower::parseScoreandModel(){
         temp.addTokens(scores[i], ",");
         score.push_back(temp[0].getIntValue());
     }
-    
     File modelFile("/Users/Toro/Documents/Spring2014/7100/ScoreFollowing/data/model.csv");
     StringArray models;
     modelFile.readLines(models);
