@@ -11,15 +11,23 @@ Follower::Follower(vector<int>& score_, vector<vector<float> >& probModel_):scor
 {
     audioInput = new float[frameSize];
     rainBuffer = new float[hopSize];
-    for (unsigned i = 0; i<frameSize; i++) audioInput[i] = 0; //init the audioBuffer to all 0
-    for (unsigned i = 0; i<hopSize; i++) rainBuffer[i] = 0; //init the audioBuffer to all 0
+    fft = new SplitRadixFFT(log2(frameSize));
+    fftBuffer = new float[frameSize*2];
+    for (unsigned i = 0; i<frameSize; i++) audioInput[i] = 0;   //init the audioBuffer to all 0
+    for (unsigned i = 0; i<hopSize; i++) rainBuffer[i] = 0;     //init the rainBuffer to all 0
+    for (unsigned i = 0; i<frameSize*2; i++) fftBuffer[i] = 0;  //init the fftBuffer to all 0
+    
+    // for test use
     audioTest.open("/Users/Toro/Documents/Spring2014/7100/ScoreFollowing/test");
+    
 }
 
 Follower::~Follower()
 {
     delete[] audioInput;
     delete[] rainBuffer;
+    delete[] fftBuffer;
+    delete fft;
     audioTest.close();
     cout<<"following finished! "<<endl;
 }
@@ -28,7 +36,7 @@ void Follower::followingMain(const float *rawAudio)
 {
     resample(rawAudio, 48000, sampleRate, hopSize*48000/sampleRate);
     // observation
-    
+    getFeatures();
 }
 
 
@@ -42,6 +50,27 @@ void Follower::alignment()
     
 }
 
+void Follower::getFeatures()
+{
+    // first doing fft
+    for (int j=0; j<frameSize; j++)
+        fftBuffer[j] = audioInput[j];
+    for (int j=frameSize; j<frameSize*2; j++)
+        fftBuffer[j] = 0;
+    fft->XForm(fftBuffer);
+    //log energy
+    float logEnergy = 0;
+    for (int i = 0; i<frameSize; i++){
+        logEnergy+=sqrt(fftBuffer[i] * fftBuffer[i] + fftBuffer[frameSize-i] *fftBuffer[frameSize-i]);
+    }
+    int normIndex = probModel[0].size()-1;
+    logEnergy = log2(logEnergy)/probModel[0][normIndex];
+    
+    //spectral balance
+    
+    //ZCR
+    
+}
 
 
 void Follower::resample(const float *rawInput, unsigned int in_rate, unsigned int out_rate, long in_length)

@@ -14,6 +14,7 @@
 #include <cmath>
 #include <algorithm>
 #include <fstream>
+#include "rsrfft.h"
 using namespace std;
 
 #define ATTACK     1
@@ -30,10 +31,7 @@ public:
     void followingMain(const float* rawAudio);
     void resample(const float* rawInput, unsigned in_rate, unsigned out_rate, long in_length);
     // feature extraction family
-    void featZCR(float* audioInput, int fileIdx);
-    void featEnv(float* audioInput, int fileIdx);
-    void featCentroid(float* audioInput, int fileIdx);
-    void featRMS(float* audioInput, int fileIdx);
+    void getFeatures();
     
     // hmm model
     // math function
@@ -50,6 +48,8 @@ private:
     int currPos;
     float* audioInput;
     float* rainBuffer;
+    SplitRadixFFT* fft;
+    float* fftBuffer;
     int overlapCount;
     ofstream audioTest;
 };
