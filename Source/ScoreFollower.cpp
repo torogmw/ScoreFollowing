@@ -9,9 +9,10 @@
 #include "ScoreFollower.h"
 
 
-ScoreFollower::ScoreFollower(){
+ScoreFollower::ScoreFollower():playingThread("audio Input source")
+{
     AudioDeviceManager::AudioDeviceSetup config;
-    config.sampleRate = SAMPLERATE;
+    config.sampleRate = RAWSAMPLERATE;
     config.bufferSize = RECORDBUFFER;
     deviceManager.setAudioDeviceSetup(config, true);
     deviceManager.initialise(2, /* number of input channels */
@@ -20,16 +21,32 @@ ScoreFollower::ScoreFollower(){
                              true, /* select default device on failure */
                              String::empty, /* preferred device name */
                              &config/* preferred setup options */);
-
+    choice = 0;//FILE_INPUT;
+    if (choice == FILE_INPUT)
+    {
+        formatManager.registerBasicFormats();
+        audioSourcePlayer.setSource(&transportSource);
+    }
     deviceManager.addAudioCallback(this);
-    ready = 0;
-    parseScoreandModel();
+    playingThread.startThread();
 
+
+    ready = 0;
+    inputToggle = 0;
+    parseScoreandModel();
+    
     //Follower = new Follower(score, probModel);
 }
 
 ScoreFollower::~ScoreFollower(){
     ready = false;
+    deviceManager.removeAudioCallback(this);
+    if(choice == FILE_INPUT)
+    {
+        transportSource.setSource(0);
+        deleteAndZero(fileSource);
+        audioSourcePlayer.setSource(0);
+    }
     delete follower;
 }
 
@@ -38,31 +55,34 @@ void ScoreFollower::audioDeviceIOCallback(const float** inputChannelData,
                            float** outputChannelData,
                            int totalNumOutputChannels,
                            int numSamples){
-    for (int i = 0; i < numSamples; ++i)
-        for (int j = totalNumOutputChannels; --j >= 0;)
-            outputChannelData[j][i] = 0;        // clean up the out data
-    // rain buffer hard code
-//    copyBuffer.copyFrom(0, 0, inputChannelData[0], numSamples);
-//    tempBuffer.copyFrom(0, 0, feedBuffer, 0, numSamples, RECORDSIZE - numSamples);
-//    tempBuffer.copyFrom(0, RECORDSIZE - numSamples, copyBuffer, 0, 0, numSamples);
-//    feedBuffer.clear();
-//    feedBuffer.copyFrom(0, 0, tempBuffer, 0, 0,RECORDSIZE);
-//    copyBuffer.clear();
-//    tempBuffer.clear();
-    // rain buffere hard code
-    if(ready)
-        follower->followingMain(inputChannelData[0]);
+    if(choice == LIVE_INPUT)
+    {
+        for (int i = 0; i < numSamples; ++i)
+            for (int j = totalNumOutputChannels; --j >= 0;)
+                outputChannelData[j][i] = 0;        // clean up the out data
+        if(ready)
+            follower->followingMain(inputChannelData[0]);
+    }
+    else if(choice == FILE_INPUT)
+    {
+        audioSourcePlayer.audioDeviceIOCallback (inputChannelData, totalNumInputChannels, outputChannelData, totalNumOutputChannels, numSamples);   //pass the output to the player
+        if(ready && inputToggle)
+            follower->followingMain(outputChannelData[0]);
         
+    }
+    
     
 }
 
 void ScoreFollower::audioDeviceAboutToStart (AudioIODevice* device){
-    
+    if (choice == FILE_INPUT)
+        audioSourcePlayer.audioDeviceAboutToStart (device);
     
 }
 
 void ScoreFollower::audioDeviceStopped(){
-    
+    if (choice == FILE_INPUT)
+        audioSourcePlayer.audioDeviceStopped();
     
 }
 
@@ -70,8 +90,7 @@ void ScoreFollower::audioDeviceStopped(){
 void ScoreFollower::parseScoreandModel(){
     vector<int> score;
     vector<vector<float> >probModel;
-    File::getCurrentWorkingDirectory();
-    File scoreFile("/Users/Toro/Documents/Spring2014/7100/ScoreFollowing/data/1_score.txt");
+    File scoreFile("/Users/Toro/Documents/Spring2014/7100/ScoreFollowing/data/4_score.txt");
     StringArray scores;
     scoreFile.readLines(scores);
     for (int i = 0; i<scores.size(); i++)
@@ -98,5 +117,25 @@ void ScoreFollower::parseScoreandModel(){
     follower = new Follower(score,probModel);           // initialize the follower
     ready = true;
     
+}
+
+void ScoreFollower::setFile(File audioFile)
+{
+    if (choice == FILE_INPUT)
+    {
+        if(audioFile.exists())
+        {
+            AudioFormatReader* tempReader = formatManager.createReaderFor(audioFile);
+            fileSource = new AudioFormatReaderSource(tempReader,true);
+            transportSource.setSource(fileSource,32768,&playingThread,RAWSAMPLERATE);
+            transportSource.start();
+            inputToggle=true;
+        }
+    }
+    
+    if (choice == LIVE_INPUT)
+    {
+        
+    }
 }
 

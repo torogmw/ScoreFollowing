@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <fstream>
 #include "rsrfft.h"
+#include "ChromaFeat.h"
 using namespace std;
 
 #define ATTACK     0
@@ -36,13 +37,18 @@ public:
     void resample(const float* rawInput, int in_rate, int out_rate, long in_length);
     // feature extraction family
     void getFeatures();
+    void pitchTracking();
     
     // hmm model, transition matrix and veterbi algorith,
     vector<vector <float> > transMatrix;
-
+    
     // math function
     double sinc(double x);
     int findMin(float key, vector<float> oneDimension);
+    void smooth(vector<int> &c);
+    void normalize(float* v, int size);
+    int maxIdx(float *data, int size);
+    
 private:
     const int sampleRate;              // restrict the samplerate to 160000
     const int frameSize;                // the frameSize is for downsampled signal
@@ -53,12 +59,21 @@ private:
     vector<float> featList;
     vector<float> dist;
     int currState;
+    int currNote;
     float* raw;
     float* audioInput;
     float* rainBuffer;
     SplitRadixFFT* fft;
     float* fftBuffer;
+    // chroma related space
+    ChromaFeat* chroma;
+    float* chromahist;
+    float* chromaBuffer;
+    vector<int> chromaFreq;
+    vector<int> targetEnergyPeaks;
     ofstream audioTest;
+    int traCount;
+    int tempPitch;
 };
 
 #endif /* defined(__ScoreFollowing__Follower__) */
